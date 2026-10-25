@@ -1,0 +1,31 @@
+# Unity 自動產生的檔案
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+
+# 建置輸出 (網頁版另外複製到 docs/ 給 GitHub Pages)
+/Build/
+
+# 下載中的暫存檔
+*.download
+
+# Claude Code 的本機設定
+/.claude/

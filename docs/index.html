@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <!-- 填滿整個視窗，iPad 上不能縮放、不會捲動 -->
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="注音怪獸">
+  <title>注音怪獸大作戰</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background: #1d2a4a; touch-action: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    #unity-canvas { width: 100%; height: 100%; display: block; background: #1d2a4a; outline: none; }
+    #loading {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #ffe066; font: bold 7vmin "Noto Sans TC", "PingFang TC", sans-serif;
+    }
+    #loading small { color: #fff; font-size: 3vmin; margin-top: 2vmin; font-weight: normal; }
+    #bar { width: 60vw; height: 3vmin; background: rgba(255,255,255,0.2); border-radius: 2vmin; margin-top: 4vmin; overflow: hidden; }
+    #fill { height: 100%; width: 0; background: #ffe066; transition: width 0.2s; }
+  </style>
+</head>
+<body>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <div id="loading">
+    注音怪獸大作戰
+    <div id="bar"><div id="fill"></div></div>
+    <small>載入中，第一次要等一下下…</small>
+  </div>
+  <script>
+    var canvas = document.querySelector("#unity-canvas");
+    var config = {
+      arguments: [],
+      dataUrl: "Build/WebGL.data.unityweb",
+      frameworkUrl: "Build/WebGL.framework.js.unityweb",
+      codeUrl: "Build/WebGL.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "PhonicGame",
+      productName: "注音怪獸大作戰",
+      productVersion: "1.0",
+      matchWebGLToCanvasSize: true,
+      // iPad 螢幕解析度很高，限制一下比較順
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    };
+    var script = document.createElement("script");
+    script.src = "Build/WebGL.loader.js";
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        document.querySelector("#fill").style.width = (100 * progress) + "%";
+      }).then(function () {
+        document.querySelector("#loading").remove();
+      }).catch(function (message) {
+        alert(message);
+      });
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
