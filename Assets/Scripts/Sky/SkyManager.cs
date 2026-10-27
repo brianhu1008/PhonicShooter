@@ -447,7 +447,7 @@ public class SkyManager : MonoBehaviour
 
     void PlayVoice(string path)
     {
-        var clip = Resources.Load<AudioClip>(path);
+        var clip = GameAudio.Load(path);
         if (clip == null) return;
         voice.Stop();
         voice.clip = clip;

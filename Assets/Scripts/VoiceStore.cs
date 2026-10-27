@@ -18,7 +18,7 @@ public static class VoiceStore
         {
             clip = File.Exists(PathOf(id)) ? LoadWav(id, PathOf(id)) : null;
             // 網頁版：電腦上錄好的聲音在建置時複製到 Resources/Voices
-            if (clip == null) clip = Resources.Load<AudioClip>("Voices/" + id);
+            if (clip == null) clip = GameAudio.Load("Voices/" + id, false);
             clips[id] = clip;
         }
         return clip;

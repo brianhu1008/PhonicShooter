@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 //  Phonics Island - voice and sound effects
 //
 //  VOICE  Order of preference:
@@ -73,7 +73,7 @@ namespace PhonicsIsland
         void Speak(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
-            AudioClip clip = Resources.Load<AudioClip>("Voice/" + MakeKey(text));
+            AudioClip clip = GameAudio.Load("Voice/" + MakeKey(text), false);
             if (clip != null)
             {
                 voiceSrc.Stop();
@@ -217,14 +217,14 @@ namespace PhonicsIsland
         // ------------------------------------------------------------------
         void BuildSfx()
         {
-            sfxDing = Resources.Load<AudioClip>("Sfx/correct");
-            sfxOops = Resources.Load<AudioClip>("Sfx/oops");
-            sfxBoing = Resources.Load<AudioClip>("Sfx/bonk");
-            sfxThrow = Resources.Load<AudioClip>("Sfx/throw");
-            sfxPop = Resources.Load<AudioClip>("Sfx/hit");
-            sfxTick = Resources.Load<AudioClip>("Sfx/tile");
-            sfxClick = Resources.Load<AudioClip>("Sfx/click");
-            sfxWin = Resources.Load<AudioClip>("Sfx/win");
+            sfxDing = GameAudio.Load("Sfx/correct");
+            sfxOops = GameAudio.Load("Sfx/oops");
+            sfxBoing = GameAudio.Load("Sfx/bonk");
+            sfxThrow = GameAudio.Load("Sfx/throw");
+            sfxPop = GameAudio.Load("Sfx/hit");
+            sfxTick = GameAudio.Load("Sfx/tile");
+            sfxClick = GameAudio.Load("Sfx/click");
+            sfxWin = GameAudio.Load("Sfx/win");
         }
     }
 }

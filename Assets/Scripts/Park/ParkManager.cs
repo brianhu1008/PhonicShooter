@@ -56,10 +56,10 @@ public class ParkManager : MonoBehaviour
         RenderSettings.fogEndDistance = 190f;
         QualitySettings.shadowDistance = 100f;
 
-        // 大海、沙灘、草地、廣場、步道
-        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.4f, 30f), new Vector3(500f, 0.1f, 500f), new Color(0.25f, 0.58f, 0.85f), true);
-        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.2f, 4f), new Vector3(92f, 0.1f, 86f), new Color(0.92f, 0.84f, 0.6f), true);
-        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.1f, 4f), new Vector3(84f, 0.1f, 78f), new Color(0.35f, 0.65f, 0.28f), true);
+        // 大海、沙灘、草地、廣場、步道 (不要碰撞元件：圓柱的碰撞是巨大的膠囊，會擋住點擊)
+        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.4f, 30f), new Vector3(500f, 0.1f, 500f), new Color(0.25f, 0.58f, 0.85f));
+        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.2f, 4f), new Vector3(92f, 0.1f, 86f), new Color(0.92f, 0.84f, 0.6f));
+        Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.1f, 4f), new Vector3(84f, 0.1f, 78f), new Color(0.35f, 0.65f, 0.28f));
         Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, 0.01f, 4f), new Vector3(36f, 0.02f, 30f), new Color(0.93f, 0.85f, 0.68f));
         Shapes.Part(PrimitiveType.Cube, root, new Vector3(0, 0.02f, 32f), new Vector3(6f, 0.02f, 24f), new Color(0.88f, 0.78f, 0.6f));
         // 廣場上的彩色地磚

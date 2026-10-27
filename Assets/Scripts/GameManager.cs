@@ -513,7 +513,7 @@ public class GameManager : MonoBehaviour
         if (recorded != null) return recorded;
         if (!voiceCache.TryGetValue(id, out var clip))
         {
-            clip = Resources.Load<AudioClip>("Audio/" + id);
+            clip = GameAudio.Load("Audio/" + id);
             voiceCache[id] = clip;
         }
         return clip;

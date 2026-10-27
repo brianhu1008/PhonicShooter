@@ -8,6 +8,7 @@
 /[Rr]ecordings/
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
 *.pidb
@@ -29,3 +30,7 @@
 
 # Claude Code 的本機設定
 /.claude/
+
+# 網頁版建置時產生的 PCM 聲音 (BuildScript.ExportWebAudio)
+/Assets/WebAudio/
+/Assets/WebAudio.meta
