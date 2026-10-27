@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="注音怪獸">
-  <title>注音怪獸大作戰</title>
+  <meta name="apple-mobile-web-app-title" content="佩佩喬治樂園">
+  <title>佩佩喬治樂園</title>
   <style>
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
@@ -29,7 +29,7 @@
 <body>
   <canvas id="unity-canvas" tabindex="-1"></canvas>
   <div id="loading">
-    注音怪獸大作戰
+    佩佩喬治樂園
     <div id="bar"><div id="fill"></div></div>
     <small>載入中，第一次要等一下下…</small>
   </div>
@@ -45,8 +45,8 @@
       productName: "注音怪獸大作戰",
       productVersion: "1.0",
       matchWebGLToCanvasSize: true,
-      // iPad 螢幕解析度很高，限制一下比較順
-      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+      // 用整數倍率 (1 或 2)：小數倍率在切換場景後畫面會對不上、變成放大
+      devicePixelRatio: Math.min(Math.max(Math.round(window.devicePixelRatio || 1), 1), 2),
     };
     var script = document.createElement("script");
     script.src = "Build/WebGL.loader.js";

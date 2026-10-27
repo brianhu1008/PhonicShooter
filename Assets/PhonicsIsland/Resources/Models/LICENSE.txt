@@ -1,0 +1,9 @@
+Capybara.obj / Capybara.mtl / Capybara_BaseColor.png
+
+"Capybara" by Poly by Google
+https://poly.pizza/m/66d-mKAgF17
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+
+Used unchanged except for color tinting at runtime. The game shows this credit
+in Parents > Credits.

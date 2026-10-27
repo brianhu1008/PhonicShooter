@@ -38,25 +38,10 @@ public class GameManager : MonoBehaviour
     const int AllGroups = -1;
 
     public GameState State { get; private set; } = GameState.Menu;
-    public Font ZhFont { get; private set; }
+    public Font ZhFont => ZhText.Font;
 
     // 怪獸牌子上的字用的材質：會被前面的怪獸擋住 (內建字型材質會穿透)
-    Material textMaterial;
-    public Material TextMaterial
-    {
-        get
-        {
-            if (textMaterial == null)
-            {
-                var template = Resources.Load<Material>("TextMat");
-                textMaterial = template != null ? new Material(template) : ZhFont.material;
-            }
-            // 動態字型新增字時貼圖會換掉，跟著更新
-            if (textMaterial != ZhFont.material && textMaterial.mainTexture != ZhFont.material.mainTexture)
-                textMaterial.mainTexture = ZhFont.material.mainTexture;
-            return textMaterial;
-        }
-    }
+    public Material TextMaterial => ZhText.Material;
     public Vector3 PlayerPos => player.transform.position;
     public IReadOnlyList<Monster> Monsters => monsters;
 
@@ -126,31 +111,10 @@ public class GameManager : MonoBehaviour
     LevelDef Level => Levels[levelIndex];
     string GroupName => groupIndex == AllGroups ? "全部注音" : PhonicData.GroupNames[groupIndex];
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    static void Boot()
-    {
-        // 任何場景按下 Play 都會自動建立整個遊戲
-        if (Instance != null) return;
-        new GameObject("PhonicShooter").AddComponent<GameManager>();
-    }
-
+    // 由 AppBoot 在 Main 場景載入時建立
     void Awake()
     {
         Instance = this;
-        Application.targetFrameRate = 60;
-#if UNITY_WEBGL && !UNITY_EDITOR
-        // 網頁版 (iPad Safari) 用不到電腦的字型，用打包進來的 Noto Sans TC
-        ZhFont = Resources.Load<Font>("Fonts/NotoSansTC-Regular");
-#else
-        ZhFont = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft JhengHei", "Microsoft JhengHei UI", "PMingLiU", "Microsoft YaHei", "Arial Unicode MS" }, 64);
-#endif
-
-        Font.textureRebuilt += f =>
-        {
-            if (f == ZhFont && textMaterial != null && textMaterial != f.material) textMaterial.mainTexture = f.material.mainTexture;
-        };
-
-        foreach (var c in Camera.allCameras) c.gameObject.SetActive(false);
         Hard = PlayerPrefs.GetInt(HardPrefKey, 0) == 1;
 
         // 注音語音，和開槍的「蹦」分開播放，互不打斷
@@ -709,9 +673,8 @@ public class GameManager : MonoBehaviour
 
     void StartAutoTestIfRequested()
     {
-        var args = System.Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length - 1; i++)
-            if (args[i] == "-autotest") { StartCoroutine(AutoTest(args[i + 1])); return; }
+        string dir = AppBoot.Arg("-autotest");
+        if (dir != null) StartCoroutine(AutoTest(dir));
     }
 
     IEnumerator AutoTest(string dir)
@@ -870,11 +833,12 @@ public class GameManager : MonoBehaviour
         if (GUI.Button(big, "<size=110>全部注音</size>\n<size=40>" + all + "</size>", sButton)) SelectGroup(AllGroups);
 
         float by = big.yMax + 60;
-#if UNITY_WEBGL && !UNITY_EDITOR
-        // 網頁版不能錄音 (電腦上錄好的會一起打包)，也不需要離開按鈕
+#if WEB_BUILD
+        // 網頁版不能錄音 (電腦上錄好的會一起打包)
+        if (GUI.Button(new Rect((W - 370) / 2f, by, 370, 80), "← 回遊樂園", sButton)) AppBoot.Load(AppBoot.ParkScene);
 #else
         if (GUI.Button(new Rect(W / 2f - 380, by, 370, 80), "錄製注音念法", sButton)) OpenRecorder();
-        if (GUI.Button(new Rect(W / 2f + 10, by, 370, 80), "離開遊戲", sButton)) Application.Quit();
+        if (GUI.Button(new Rect(W / 2f + 10, by, 370, 80), "← 回遊樂園", sButton)) AppBoot.Load(AppBoot.ParkScene);
 #endif
 #if WEB_BUILD
         Label(new Rect(0, H - 60, W, 50), "點怪獸就能發射！爸爸媽媽：遊戲中右上角「暫停」可以回主選單", sHint, new Color(1, 1, 1, 0.8f));
@@ -1063,15 +1027,11 @@ public class GameManager : MonoBehaviour
 
     void DrawPause()
     {
-#if WEB_BUILD
-        if (Dialog("暫停", "休息一下～", out int c, "繼續玩", "回主選單"))
-#else
-        if (Dialog("暫停", "休息一下～", out int c, "繼續玩", "回主選單", "離開遊戲"))
-#endif
+        if (Dialog("暫停", "休息一下～", out int c, "繼續玩", "回主選單", "回遊樂園"))
         {
             if (c == 0) SetPaused(false);
             else if (c == 1) ShowMenu();
-            else Application.Quit();
+            else AppBoot.Load(AppBoot.ParkScene);
         }
     }
 

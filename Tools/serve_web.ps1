@@ -21,6 +21,9 @@ while ($listener.IsListening) {
     $bytes = [IO.File]::ReadAllBytes($file)
     $ext = [IO.Path]::GetExtension($file).ToLower()
     $ctx.Response.ContentType = if ($types.ContainsKey($ext)) { $types[$ext] } else { 'application/octet-stream' }
+    # 讓瀏覽器知道檔案有沒有更新 (重新建置後才會載入新版，不會一直用舊的快取)
+    $ctx.Response.Headers.Add('Cache-Control', 'no-cache')
+    $ctx.Response.Headers.Add('Last-Modified', (Get-Item $file).LastWriteTimeUtc.ToString('R'))
     $ctx.Response.ContentLength64 = $bytes.Length
     $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
   } else {

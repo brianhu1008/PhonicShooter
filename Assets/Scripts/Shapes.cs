@@ -5,6 +5,22 @@ public static class Shapes
 {
     public const int IgnoreRaycastLayer = 2;
 
+    // 網頁版建置會剔除沒被程式直接用到的引擎類別；CreatePrimitive 需要這些碰撞元件，
+    // 在這裡直接引用，避免每產生一個物件就印一行「class doesn't exist」錯誤
+    [UnityEngine.Scripting.Preserve]
+    static readonly System.Type[] KeepColliders = { typeof(SphereCollider), typeof(CapsuleCollider), typeof(BoxCollider), typeof(MeshCollider) };
+
+    [UnityEngine.Scripting.Preserve, RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void TouchColliders()
+    {
+        // 實際用一次，確保建置工具保留這些類別
+        var go = new GameObject("KeepColliders");
+        go.AddComponent<SphereCollider>();
+        go.AddComponent<CapsuleCollider>();
+        Object.Destroy(go);
+        if (KeepColliders.Length == 0) Debug.Log("never");
+    }
+
     // Resources/BaseMat.mat (由編輯器腳本建立) 讓 Standard shader 被包進建置檔，
     // 否則執行檔裡的物件會變成粉紅色
     static Material baseMat;

@@ -32,6 +32,8 @@ public static class BuildScript
         PlayerSettings.defaultWebScreenWidth = 1280;
         PlayerSettings.defaultWebScreenHeight = 720;
         PlayerSettings.runInBackground = false;
+        // 剔除沒用到的引擎程式碼 (檔案比較小)；CreatePrimitive 需要的碰撞元件在 Shapes.cs 直接引用保留
+        PlayerSettings.stripEngineCode = true;
 
         // 網頁版不能錄音：把電腦上錄好的注音一起打包
         CopyRecordedVoices();
@@ -43,7 +45,8 @@ public static class BuildScript
     {
         SceneSetup.EnsureBaseMaterial();
         AudioTrimmer.Trim(false); // 辭典錄音只留字音 (不念部首、筆畫)
-        if (!File.Exists(SceneSetup.ScenePath)) SceneSetup.CreateAndOpen();
+        SceneSetup.EnsureAllScenes();
+        // 產品名稱不要改：家長錄音存在以產品名稱命名的資料夾裡
         PlayerSettings.productName = "注音怪獸大作戰";
         PlayerSettings.companyName = "PhonicGame";
         PlayerSettings.SplashScreen.show = false;
@@ -68,7 +71,7 @@ public static class BuildScript
     {
         var options = new BuildPlayerOptions
         {
-            scenes = new[] { SceneSetup.ScenePath },
+            scenes = SceneSetup.AllScenes, // 第一個 (兒童樂園) 是開啟時的入口
             locationPathName = output,
             target = target,
             options = BuildOptions.None,

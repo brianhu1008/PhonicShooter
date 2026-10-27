@@ -1,0 +1,11 @@
+Sound effects by Kenney (www.kenney.nl), Creative Commons Zero (CC0)
+http://creativecommons.org/publicdomain/zero/1.0/
+
+correct.ogg  Interface Sounds  confirmation_002.ogg
+oops.ogg     Interface Sounds  question_001.ogg
+throw.ogg    Interface Sounds  maximize_006.ogg
+tile.ogg     Interface Sounds  pluck_002.ogg
+click.ogg    Interface Sounds  click_002.ogg
+bonk.ogg     Impact Sounds     impactSoft_heavy_001.ogg
+hit.ogg      Impact Sounds     impactSoft_medium_001.ogg
+win.ogg      Music Jingles     jingles_STEEL07.ogg

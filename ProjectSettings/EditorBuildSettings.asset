@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Park.unity
+    guid: a9d45b9520a28924c861b9adaacce8c6
+  - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 2f36fa5c3f1adc648bd84591b582a248
+  - enabled: 1
+    path: Assets/Scenes/Multiply.unity
+    guid: 577594a33b13c4d4399fbb32a80927d6
+  - enabled: 1
+    path: Assets/Scenes/Island.unity
+    guid: b019264479dc25e46b85cb1d1232a815
   m_configObjects: {}

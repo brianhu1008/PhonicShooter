@@ -1,0 +1,4 @@
+<!-- 網頁版建置時不要把物理元件剔除：GameObject.CreatePrimitive 會加上 SphereCollider / CapsuleCollider -->
+<linker>
+  <assembly fullname="UnityEngine.PhysicsModule" preserve="all" />
+</linker>
