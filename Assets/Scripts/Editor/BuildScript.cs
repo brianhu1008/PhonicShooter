@@ -25,6 +25,8 @@ public static class BuildScript
     [MenuItem("注音怪獸/建置網頁版 (iPad)")]
     public static void BuildWebGL()
     {
+        // 上次建置中途被中斷的話，先把暫時移走的音檔搬回去 (要在 Prepare 之前，不然會被當成沒有音檔)
+        RecoverWebAudio();
         Prepare();
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
         PlayerSettings.WebGL.decompressionFallback = true; // 任何網站都能放，不用設定伺服器
@@ -38,6 +40,8 @@ public static class BuildScript
 
         // 網頁版不能錄音：把電腦上錄好的注音一起打包
         CopyRecordedVoices();
+        // 發音島的英文對話：iPad Safari 擋掉瀏覽器朗讀，先錄成音檔
+        PhonicsIsland.IslandVoices.Generate();
 
         // iPad Safari 解不開 Unity 打包的音檔 (EncodingError: Decoding failed)：
         // 聲音全部轉成原始 PCM 資料 (GameAudio 執行時直接建立)，原本的音檔建置時先移出 Resources
@@ -55,7 +59,9 @@ public static class BuildScript
     const string WebAudioStore = WebAudioRoot + "/Store";      // 平常放這裡 (不是 Resources，不會被打包)
     const string WebAudioActive = WebAudioRoot + "/Resources"; // 建置網頁版時改名成 Resources
     const string HiddenRoot = WebAudioRoot + "/Hidden";
+    const string MovedList = WebAudioRoot + "/moved.txt";     // 每行：原位置|暫存位置 (中斷時用來搬回去)
     const int WebRate = 22050;
+    const int VoiceRate = 16000;
 
     // 把每個 Resources 裡的聲音轉成 Pcm/<路徑>.bytes；回傳暫時移走的音檔資料夾 (原位置 → 暫存位置)
     static List<KeyValuePair<string, string>> ExportWebAudio()
@@ -77,18 +83,19 @@ public static class BuildScript
             if (clip == null || !clip.LoadAudioData()) { Debug.LogWarning("[BuildScript] 讀不到聲音 " + path); continue; }
             var data = new float[clip.samples * clip.channels];
             clip.GetData(data, 0);
-            // 轉單聲道、22050 Hz
+            // 轉單聲道、22050 Hz (發音島的英文對話用 16000 Hz 就夠清楚，檔案小很多)
+            int rate = path.Contains("/PhonicsIsland/Resources/Voice/") ? VoiceRate : WebRate;
             int frames = clip.samples;
-            int outCount = Mathf.Max(1, Mathf.RoundToInt(frames * (float)WebRate / clip.frequency));
+            int outCount = Mathf.Max(1, Mathf.RoundToInt(frames * (float)rate / clip.frequency));
             Directory.CreateDirectory(Path.GetDirectoryName(dst));
             using (var w = new BinaryWriter(File.Create(dst)))
             {
                 w.Write(System.Text.Encoding.ASCII.GetBytes("PCM1"));
-                w.Write(WebRate);
+                w.Write(rate);
                 w.Write(outCount);
                 for (int i = 0; i < outCount; i++)
                 {
-                    float src = i * (float)clip.frequency / WebRate;
+                    float src = i * (float)clip.frequency / rate;
                     int i0 = Mathf.Min(frames - 1, (int)src), i1 = Mathf.Min(frames - 1, i0 + 1);
                     float t = src - i0, v0 = 0f, v1 = 0f;
                     for (int c = 0; c < clip.channels; c++) { v0 += data[i0 * clip.channels + c]; v1 += data[i1 * clip.channels + c]; }
@@ -112,7 +119,11 @@ public static class BuildScript
         {
             if (folder.EndsWith("/Resources")) continue; // 不能整個 Resources 移走 (只移裡面的子資料夾)
             string to = HiddenRoot + "/" + (n++) + "_" + Path.GetFileName(folder);
-            if (Check(AssetDatabase.MoveAsset(folder, to))) moved.Add(new KeyValuePair<string, string>(folder, to));
+            if (Check(AssetDatabase.MoveAsset(folder, to)))
+            {
+                moved.Add(new KeyValuePair<string, string>(folder, to));
+                File.AppendAllText(MovedList, folder + "|" + to + "\n");
+            }
         }
         return moved;
     }
@@ -121,7 +132,37 @@ public static class BuildScript
     {
         foreach (var kv in moved) Check(AssetDatabase.MoveAsset(kv.Value, kv.Key));
         Check(AssetDatabase.MoveAsset(WebAudioActive, WebAudioStore));
-        AssetDatabase.DeleteAsset(HiddenRoot);
+        FinishRestore();
+    }
+
+    static void RecoverWebAudio()
+    {
+        if (File.Exists(MovedList))
+        {
+            AssetDatabase.Refresh();
+            foreach (var line in File.ReadAllLines(MovedList))
+            {
+                var parts = line.Split('|');
+                if (parts.Length != 2 || !AssetDatabase.IsValidFolder(parts[1])) continue;
+                if (AssetDatabase.IsValidFolder(parts[0])) { Debug.LogError("[BuildScript] 兩邊都有，不動：" + line); continue; }
+                if (Check(AssetDatabase.MoveAsset(parts[1], parts[0]))) Debug.Log("[BuildScript] 搬回上次中斷時移走的音檔 " + parts[0]);
+            }
+        }
+        if (AssetDatabase.IsValidFolder(WebAudioActive) && !AssetDatabase.IsValidFolder(WebAudioStore))
+            Check(AssetDatabase.MoveAsset(WebAudioActive, WebAudioStore));
+        FinishRestore();
+    }
+
+    // Hidden 裡還有東西就留著 (不要刪掉沒搬回去的音檔)
+    static void FinishRestore()
+    {
+        AssetDatabase.Refresh();
+        if (AssetDatabase.IsValidFolder(HiddenRoot))
+        {
+            if (AssetDatabase.FindAssets("", new[] { HiddenRoot }).Length == 0) AssetDatabase.DeleteAsset(HiddenRoot);
+            else { Debug.LogError("[BuildScript] " + HiddenRoot + " 還有音檔沒搬回去，請手動檢查"); return; }
+        }
+        if (File.Exists(MovedList)) File.Delete(MovedList);
         AssetDatabase.Refresh();
     }
 

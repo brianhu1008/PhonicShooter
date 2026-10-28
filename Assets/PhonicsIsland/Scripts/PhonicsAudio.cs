@@ -176,6 +176,17 @@ namespace PhonicsIsland
         void SpeakWindows(string text)
         {
             if (ttsProc == null || ttsProc.HasExited) return;
+            try
+            {
+                ttsProc.StandardInput.WriteLine(TtsLine(text));
+                ttsProc.StandardInput.Flush();
+            }
+            catch { }
+        }
+
+        // One utterance in the format TtsScript reads (also used by Editor/IslandVoices.cs)
+        public static string TtsLine(string text)
+        {
             var sb = new StringBuilder();
             int i = 0;
             while (i < text.Length)
@@ -190,12 +201,39 @@ namespace PhonicsIsland
                 else sb.Append('\u0001').Append(inner);
                 i = close + 1;
             }
+            return System.Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+#endif
+
+#if UNITY_EDITOR
+        // Every line Speak() can say, key -> text. Questions are random, so each island's
+        // question set is built many times. The editor records these as Resources/Voice clips,
+        // because iPad Safari blocks browser speech that does not start right inside a tap.
+        public static System.Collections.Generic.Dictionary<string, string> AllSpokenLines(int rounds)
+        {
+            var lines = new System.Collections.Generic.Dictionary<string, string>();
+            void Add(string text) { if (!string.IsNullOrEmpty(text)) lines[MakeKey(text)] = text; }
+            var go = new GameObject("PhonicsVoiceLines") { hideFlags = HideFlags.HideAndDontSave };
             try
             {
-                ttsProc.StandardInput.WriteLine(System.Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString())));
-                ttsProc.StandardInput.Flush();
+                var game = go.AddComponent<PhonicsIslandGame>();
+                game.BuildContent();
+                Add("Thank you! Let's be friends!");
+                foreach (var island in game.islands)
+                {
+                    Add("Welcome to " + island.nameEn + "!");
+                    foreach (var line in island.intro) Add(line.say);
+                    game.cur = island;
+                    for (int r = 0; r < rounds; r++)
+                        foreach (bool hard in new[] { false, true })
+                        {
+                            if (island.findItems != null) island.findItems = game.PickBeachItems();
+                            foreach (var q in island.make(hard)) { Add(q.say); Add(q.sayCorrect); }
+                        }
+                }
             }
-            catch { }
+            finally { Object.DestroyImmediate(go); }
+            return lines;
         }
 #endif
 
