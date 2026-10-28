@@ -4,7 +4,8 @@
 //  VOICE  Order of preference:
 //          1) an AudioClip at Assets/Resources/Voice/<key>.wav|mp3|ogg
 //             (key = the text in lower case, spaces as _, other symbols removed,
-//              e.g. "Find the shell!" -> find_the_shell)
+//              e.g. "Find the shell!" -> find_the_shell). Editor/IslandVoices.cs records
+//              every line with an Edge "Natural" voice into Assets/PhonicsIsland/Resources/Voice.
 //          2) on Windows, the built-in English text-to-speech voice. One hidden
 //             PowerShell process is kept running so speech starts quickly.
 //         Text in {text:ipa} is spoken as an IPA sound, e.g. {sh:ʃ}.
@@ -89,11 +90,14 @@ namespace PhonicsIsland
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-        // Browser speech (Plugins/WebGL/PhonicsSpeech.jslib). It has no IPA support,
-        // so single sounds are written the way an English voice reads them.
+        // Browser speech (Plugins/WebGL/PhonicsSpeech.jslib).
         [System.Runtime.InteropServices.DllImport("__Internal")]
         static extern void PhonicsSpeak(string text);
+#endif
 
+#if UNITY_WEBGL || UNITY_EDITOR
+        // Browser speech and the Edge voices the editor records (Editor/IslandVoices.cs) have
+        // no IPA support, so single sounds are written the way an English voice reads them.
         static readonly System.Collections.Generic.Dictionary<string, string> IpaSpelling =
             new System.Collections.Generic.Dictionary<string, string>
             {
@@ -103,7 +107,7 @@ namespace PhonicsIsland
                 { "u", "ooh" }, { "ʊ", "uh" }, { "aʊ", "ow" }, { "ɔɪ", "oy" }
             };
 
-        static string WebSpeechText(string text)
+        public static string WebSpeechText(string text)
         {
             var sb = new StringBuilder();
             int i = 0;

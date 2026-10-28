@@ -34,3 +34,6 @@
 # 網頁版建置時產生的 PCM 聲音 (BuildScript.ExportWebAudio)
 /Assets/WebAudio/
 /Assets/WebAudio.meta
+
+# 錄發音島語音用的 Python 環境 (Tools/PhonicsIsland/setup_tts.bat 會建立)
+/Tools/PhonicsIsland/ttsenv/

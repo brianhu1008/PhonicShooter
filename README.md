@@ -59,5 +59,6 @@ iPad 上可以按 Safari 的「分享 → 加入主畫面」，之後就像 App 
 - 卡皮巴拉發音島 (來自 PhonicIsland)：
   - 3D 卡皮巴拉模型："Capybara" by Poly by Google，[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)，來源 <https://poly.pizza/m/66d-mKAgF17>（只調整顏色）
   - 音效：[Kenney](https://www.kenney.nl)（Interface Sounds、Impact Sounds、Music Jingles），CC0
+  - 英文對話語音：Microsoft Edge 的 Natural 語音 (en-US-JennyNeural)，用 [edge-tts](https://github.com/rany2/edge-tts) 透過 Edge「大聲朗讀」的線上服務錄成音檔 (非微軟正式提供的用法)
   - 單字圖片：Microsoft Fluent Emoji 風格的表情符號，由 Windows 內建的 Segoe UI Emoji 字型繪製
   - 英文字型：Noto Sans TC 子集 (SIL OFL 1.1，`Assets/PhonicsIsland/Resources/Fonts/OFL.txt`)
