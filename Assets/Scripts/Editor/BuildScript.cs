@@ -83,8 +83,8 @@ public static class BuildScript
             if (clip == null || !clip.LoadAudioData()) { Debug.LogWarning("[BuildScript] 讀不到聲音 " + path); continue; }
             var data = new float[clip.samples * clip.channels];
             clip.GetData(data, 0);
-            // 轉單聲道、22050 Hz (發音島的英文對話用 16000 Hz 就夠清楚，檔案小很多)
-            int rate = path.Contains("/PhonicsIsland/Resources/Voice/") ? VoiceRate : WebRate;
+            // 轉單聲道、22050 Hz (說話的語音 Voice / Voices / MulVoice / GardenVoice 用 16000 Hz 就夠清楚，檔案小很多)
+            int rate = path.Contains("Voice") ? VoiceRate : WebRate;
             int frames = clip.samples;
             int outCount = Mathf.Max(1, Mathf.RoundToInt(frames * (float)rate / clip.frequency));
             Directory.CreateDirectory(Path.GetDirectoryName(dst));

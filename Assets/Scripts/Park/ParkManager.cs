@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 佩佩喬治樂園：遊戲的入口。點遊樂設施進入：
-//   摩天輪 → 注音怪獸大作戰；戰機旋轉設施 → 九九乘法戰機；
+//   摩天輪 → 注音怪獸大作戰；戰機旋轉設施 → 九九乘法戰機；廣場中間的花圃 → 九九乘法花園；
 //   後面海上的卡皮巴拉發音島 (滑鼠移到畫面上方，鏡頭會帶過去) → Phonics Island
 public class ParkManager : MonoBehaviour
 {
@@ -14,8 +14,9 @@ public class ParkManager : MonoBehaviour
     readonly List<Transform> rideJets = new List<Transform>();
     readonly List<Transform> horses = new List<Transform>();
     readonly List<Transform> balloons = new List<Transform>();
-    Collider wheelHit, jetHit, islandHit;
-    TextMesh wheelSign, jetSign, islandSign;
+    readonly List<Transform> gardenFlowers = new List<Transform>();
+    Collider wheelHit, jetHit, islandHit, gardenHit;
+    TextMesh wheelSign, jetSign, islandSign, gardenSign;
     string hovered;
     string leaving;
     float fade;
@@ -62,19 +63,41 @@ public class ParkManager : MonoBehaviour
         Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, -0.1f, 4f), new Vector3(84f, 0.1f, 78f), new Color(0.35f, 0.65f, 0.28f));
         Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(0, 0.01f, 4f), new Vector3(36f, 0.02f, 30f), new Color(0.93f, 0.85f, 0.68f));
         Shapes.Part(PrimitiveType.Cube, root, new Vector3(0, 0.02f, 32f), new Vector3(6f, 0.02f, 24f), new Color(0.88f, 0.78f, 0.6f));
-        // 廣場上的彩色地磚
-        for (int i = 0; i < 12; i++)
-        {
-            float a = i * Mathf.PI * 2f / 12f;
-            Shapes.Part(PrimitiveType.Cylinder, root, new Vector3(Mathf.Cos(a) * 4f, 0.03f, 4f + Mathf.Sin(a) * 4f), new Vector3(1.4f, 0.02f, 1.4f), Color.HSVToRGB(i / 12f, 0.45f, 1f));
-        }
 
+        BuildGarden(root, new Vector3(0, 0, 4f)); // 廣場中間
         BuildGate(root, new Vector3(0, 0, 38f)); // 樂園後面，通往小島的碼頭入口
         BuildFerrisWheel(root, new Vector3(-11f, 0, 6f));
         BuildJetRide(root, new Vector3(11f, 0, 6f));
         BuildCarousel(root, new Vector3(0, 0, 17f));
         BuildDecor(root);
         BuildIsland(root, new Vector3(0, 0, 92f));
+    }
+
+    // 九九乘法花園：圓形花圃，花一排一排種好 (4 排、每排 6 朵)，外面圍一圈白色小籬笆
+    void BuildGarden(Transform root, Vector3 p)
+    {
+        var g = new GameObject("Garden").transform;
+        g.SetParent(root, false);
+        g.localPosition = p;
+        Shapes.Part(PrimitiveType.Cylinder, g, new Vector3(0, 0.05f, 0), new Vector3(9.4f, 0.05f, 9.4f), new Color(0.45f, 0.75f, 0.35f));
+        Shapes.Part(PrimitiveType.Cylinder, g, new Vector3(0, 0.12f, 0.3f), new Vector3(6.6f, 0.08f, 5.4f), new Color(0.55f, 0.38f, 0.25f));
+        // 籬笆 (前面留一個入口)
+        for (int i = 0; i < 28; i++)
+        {
+            float a = i * Mathf.PI * 2f / 28f;
+            if (Mathf.Abs(Mathf.DeltaAngle(a * Mathf.Rad2Deg, 270f)) < 20f) continue;
+            var pos = new Vector3(Mathf.Cos(a) * 4.5f, 0.45f, Mathf.Sin(a) * 4.5f);
+            Shapes.Part(PrimitiveType.Cube, g, pos, new Vector3(0.18f, 0.9f, 0.18f), Color.white);
+            float a2 = (i + 0.5f) * Mathf.PI * 2f / 28f;
+            var rail = Shapes.Part(PrimitiveType.Cube, g, new Vector3(Mathf.Cos(a2) * 4.5f, 0.6f, Mathf.Sin(a2) * 4.5f), new Vector3(1.05f, 0.1f, 0.08f), Color.white);
+            rail.transform.localRotation = Quaternion.Euler(0, -a2 * Mathf.Rad2Deg + 90f, 0);
+        }
+        for (int r = 0; r < 4; r++)
+            for (int c = 0; c < 6; c++)
+                gardenFlowers.Add(GardenFlower.Make(g, new Vector3(-2.5f + c * 1f, 0.15f, 1.9f - r * 1.05f), GardenFlower.RowColor(r), 1.5f));
+
+        gardenSign = Sign(g, new Vector3(0, 2.2f, -5.8f), "九九乘法花園", "種花學乘法 3 × 4", new Color(0.4f, 0.72f, 0.35f));
+        gardenHit = AddHitBox(g, new Vector3(0, 1.5f, -0.5f), new Vector3(10f, 4f, 11f));
     }
 
     // 卡皮巴拉發音島：在樂園後面的海上，有木頭碼頭走過去
@@ -129,7 +152,7 @@ public class ParkManager : MonoBehaviour
     }
 
     // 從 PhonicIsland 的資源載入卡皮巴拉模型，縮放到指定高度
-    Transform BuildCapybara(Transform parent, Vector3 pos, float height)
+    public static Transform BuildCapybara(Transform parent, Vector3 pos, float height)
     {
         var holder = new GameObject("Capybara").transform;
         holder.SetParent(parent, false);
@@ -384,6 +407,8 @@ public class ParkManager : MonoBehaviour
             balloons[i].localRotation = Quaternion.Euler(Mathf.Sin(t + i) * 6f, 0, Mathf.Cos(t * 0.8f + i) * 6f);
 
         islandCapy.localRotation = Quaternion.Euler(0, 180f + Mathf.Sin(t * 0.6f) * 12f, 0);
+        for (int i = 0; i < gardenFlowers.Count; i++)
+            gardenFlowers[i].localRotation = Quaternion.Euler(Mathf.Sin(t * 1.6f + i * 0.7f) * 6f, 0, Mathf.Cos(t * 1.3f + i) * 6f);
 
         // 滑鼠移到畫面上方 → 鏡頭帶到後面的小島；移到下方 → 回到樂園 (iPad 點上方 / 下方也可以)
         float py = GameInput.PointerPosition.y / Mathf.Max(1, Screen.height);
@@ -402,6 +427,7 @@ public class ParkManager : MonoBehaviour
                 if (hit.collider == wheelHit) hovered = AppBoot.ZhuyinScene;
                 else if (hit.collider == jetHit) hovered = AppBoot.MultiplyScene;
                 else if (hit.collider == islandHit) hovered = AppBoot.IslandScene;
+                else if (hit.collider == gardenHit) hovered = AppBoot.GardenScene;
             }
             if (hovered == AppBoot.IslandScene) focusTarget = 1f; // 指著小島就停在小島
             if (hovered != null && GameInput.Fire && !PointerOverUi()) Go(hovered);
@@ -410,6 +436,7 @@ public class ParkManager : MonoBehaviour
         wheelSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.ZhuyinScene ? pulse : 1f);
         jetSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.MultiplyScene ? pulse : 1f);
         islandSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.IslandScene ? pulse * 1.3f : 1.3f);
+        gardenSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.GardenScene ? pulse : 1f);
 
         if (leaving != null)
         {
@@ -461,7 +488,8 @@ public class ParkManager : MonoBehaviour
         if (hovered != null)
         {
             var p = ui.ToGui(GameInput.PointerPosition);
-            string tip = hovered == AppBoot.ZhuyinScene ? "坐摩天輪！" : hovered == AppBoot.MultiplyScene ? "開戰機！" : "去卡皮巴拉發音島！";
+            string tip = hovered == AppBoot.ZhuyinScene ? "坐摩天輪！" : hovered == AppBoot.MultiplyScene ? "開戰機！" :
+                hovered == AppBoot.GardenScene ? "去種花！" : "去卡皮巴拉發音島！";
             float tw = hovered == AppBoot.IslandScene ? 380 : 260;
             ui.Box(new Rect(p.x + 20, p.y - 70, tw, 60), new Color(0, 0, 0, 0.6f));
             ui.Label(new Rect(p.x + 20, p.y - 70, tw, 60), tip, ui.Small, Color.yellow);
