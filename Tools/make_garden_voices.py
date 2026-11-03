@@ -31,17 +31,20 @@ def chant_number(p):
 
 
 def lines():
-    yield "ask", "一共有幾朵花？"
+    # 語音會把「種」念成「種子」的三聲，所以用同音的「眾」(念 ㄓㄨㄥˋ)；
+    # 「乘」也可能念錯，用同音的「成」(和 make_mul_voices.ps1 一樣)
+    yield "plant", "在花圃上眾花，數數看！"
     yield "again", "再數數看！"
     yield "good1", "答對了！"
     yield "good2", "好棒！"
     yield "good3", "你好厲害！"
-    yield "done", "花園種滿了，你是九九乘法小園丁！"
+    yield "done", "花園眾滿了，你是九九乘法小園丁！"
     for k in range(1, 82):
         yield f"n_{k}", number(k)
     for a in range(2, 10):
         for b in range(1, 10):
-            yield f"p_{a}_{b}", f"種{DIGITS[a]}排，每排{DIGITS[b]}朵花。"
+            yield f"q_{a}_{b}", f"{DIGITS[a]}成以{DIGITS[b]}，等於多少？"
+            yield f"p_{a}_{b}", f"眾{DIGITS[a]}排，每排{DIGITS[b]}朵花。"
             p = a * b
             # 加逗號，語音才會念成口訣的節奏，不會把「三四」念成「三十四」
             yield f"c_{a}_{b}", f"{DIGITS[a]}{DIGITS[b]}，{'得' + DIGITS[p] if p < 10 else chant_number(p)}。"
