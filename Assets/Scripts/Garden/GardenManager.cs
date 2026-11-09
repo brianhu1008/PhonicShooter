@@ -5,7 +5,7 @@ using UnityEngine;
 public enum GardenState { Menu, Play, Grow, Result, Finished }
 
 // 九九乘法花園：先出題「5 × 8 = ?」，下面的答案字卡一開始就看得到。
-// 小朋友可以自己在花圃上拖出一塊地種花 (幾排、每排幾朵都自己決定)，花一排一排長出來，
+// 小朋友自己在花圃上種花：點一格種一朵 (再點一下拿掉)，或按住拖出一塊地一次種好幾排，兩種可以混著用。
 // 種好、數一數，再選正確答案。答錯了先請他再數數看，錯好幾次才慢慢給提示。
 // 答對了，如果種的剛好是 5 排 × 8 朵，花圃轉一圈，8 × 5 也是一樣多。
 public class GardenManager : MonoBehaviour
@@ -36,9 +36,7 @@ public class GardenManager : MonoBehaviour
     int range;
     MulQuestion q;
     int round, stars, wrongAnswers;
-    // 種好的那塊地 (左上角那一格、幾排、每排幾朵)
-    int plantR, plantC, plantRows, plantCols;
-    // 正在拖的那塊地
+    // 正在拖的那塊地 (只拖一格 = 點一下)
     bool dragging;
     int dragR, dragC, pickR, pickC, pickRows, pickCols, hoverR = -1, hoverC = -1;
     bool prevHeld, touchMode;
@@ -47,14 +45,22 @@ public class GardenManager : MonoBehaviour
     readonly List<Rect> uiRects = new List<Rect>();
     string banner, banner2, message;
     float messageTime, spin, spinTarget, plantReady;
-    int token, growToken;
+    int token, growToken, countToken;
     Coroutine talk;
 
     AudioSource voice, sfx;
     AudioClip ding, oops, pop, win;
 
     int ChoiceCount => hard ? 4 : 3;
-    int Planted => plantRows * plantCols;
+    int Planted
+    {
+        get
+        {
+            int n = 0;
+            foreach (var f in flowers) if (f != null) n++;
+            return n;
+        }
+    }
 
     void Awake()
     {
@@ -196,59 +202,138 @@ public class GardenManager : MonoBehaviour
     void ClearFlowers()
     {
         growToken++;
+        countToken++;
         foreach (var f in flowers) if (f != null) Destroy(f.gameObject);
         System.Array.Clear(flowers, 0, flowers.Length);
         foreach (var t in rowCounts) Destroy(t.gameObject);
         rowCounts.Clear();
         growing.Clear();
         bouncing.Clear();
-        plantRows = plantCols = 0;
     }
 
-    // 種下拖出來的那塊地 (再種一次會換掉原來的花)
-    void Plant(int r0, int c0, int rows, int cols)
+    Transform NewFlower(int r, int c)
     {
-        ClearFlowers();
-        plantR = r0; plantC = c0; plantRows = rows; plantCols = cols;
-        state = GardenState.Grow;
-        StartCoroutine(Grow(growToken));
+        // 往鏡頭這邊挪一點：鏡頭斜斜往下看，花頭才會落在自己那一格上；同一排同一個顏色
+        var f = GardenFlower.Make(bed, CellPos(r, c) + new Vector3(0, 0.17f, -0.32f), GardenFlower.RowColor(r), 1.25f);
+        f.localScale = Vector3.zero;
+        flowers[r, c] = f;
+        growing.Add(new KeyValuePair<Transform, float>(f, Time.time));
+        return f;
     }
 
-    IEnumerator Grow(int t)
+    // 點一下：空的格子種一朵，已經有花就拿掉
+    void ToggleFlower(int r, int c)
     {
-        for (int i = 0; i < plantRows; i++)
+        countToken++; // 正在數的停下來，重新算
+        if (flowers[r, c] != null)
         {
-            for (int j = 0; j < plantCols; j++)
+            Destroy(flowers[r, c].gameObject);
+            flowers[r, c] = null;
+            sfx.pitch = 0.7f;
+            sfx.PlayOneShot(pop, 0.5f);
+        }
+        else
+        {
+            NewFlower(r, c);
+            sfx.pitch = 1.1f;
+            sfx.PlayOneShot(pop, 0.7f);
+            // 簡單：一朵一朵種的時候幫忙數 (1、2、3…)
+            if (!hard) Say("GardenVoice/n_" + Planted);
+        }
+        sfx.pitch = 1f;
+        RefreshCounts();
+    }
+
+    // 拖一塊地：空的格子都種上花，一排一排長出來
+    void PlantArea(int r0, int c0, int rows, int cols)
+    {
+        countToken++;
+        state = GardenState.Grow;
+        StartCoroutine(GrowArea(growToken, r0, c0, rows, cols));
+    }
+
+    IEnumerator GrowArea(int t, int r0, int c0, int rows, int cols)
+    {
+        for (int r = r0; r < r0 + rows; r++)
+        {
+            bool any = false;
+            for (int c = c0; c < c0 + cols; c++)
             {
-                int r = plantR + i, c = plantC + j;
-                // 往鏡頭這邊挪一點：鏡頭斜斜往下看，花頭才會落在自己那一格上
-                var f = GardenFlower.Make(bed, CellPos(r, c) + new Vector3(0, 0.17f, -0.32f), GardenFlower.RowColor(i), 1.25f);
-                f.localScale = Vector3.zero;
-                flowers[r, c] = f;
-                growing.Add(new KeyValuePair<Transform, float>(f, Time.time));
+                if (flowers[r, c] != null) continue;
+                NewFlower(r, c);
+                any = true;
                 yield return new WaitForSeconds(hard ? 0.03f : 0.05f);
                 if (t != growToken) yield break;
             }
-            sfx.pitch = 0.9f + i * 0.08f;
+            if (!any) continue;
+            sfx.pitch = 0.9f + (r - r0) * 0.08f;
             sfx.PlayOneShot(pop, 0.7f);
-            if (!hard)
-            {
-                // 簡單：每排長完就幫忙數一次 (8、16、24…)
-                AddRowCount(i, plantCols * (i + 1));
-                Say("GardenVoice/n_" + plantCols * (i + 1));
-                yield return new WaitForSeconds(0.85f);
-            }
-            else yield return new WaitForSeconds(0.3f);
-            if (t != growToken) yield break;
+            yield return new WaitForSeconds(0.15f);
         }
         sfx.pitch = 1f;
         state = GardenState.Play;
+        if (t != growToken) yield break;
+        // 簡單：長好以後一排一排幫忙數 (8、16、24…)
+        if (!hard) StartCoroutine(CountRows(++countToken, false));
+        else RefreshCounts();
     }
 
-    void AddRowCount(int i, int count)
+    // 每一排最右邊那朵花的旁邊，寫到這一排為止一共幾朵 (困難模式不寫)
+    void RefreshCounts()
     {
-        var pos = CellPos(plantR + i, plantC + plantCols - 1) + new Vector3(0.95f, 0.4f, 0);
+        foreach (var tm in rowCounts) Destroy(tm.gameObject);
+        rowCounts.Clear();
+        if (hard) return;
+        int total = 0;
+        for (int r = 0; r < Size; r++)
+        {
+            int last = RowEnd(r, out int n);
+            if (n == 0) continue;
+            total += n;
+            AddRowCount(r, last, total);
+        }
+    }
+
+    // 這一排有幾朵花、最右邊那朵在第幾格
+    int RowEnd(int r, out int count)
+    {
+        count = 0;
+        int last = -1;
+        for (int c = 0; c < Size; c++) if (flowers[r, c] != null) { count++; last = c; }
+        return last;
+    }
+
+    void AddRowCount(int r, int lastCol, int count)
+    {
+        var pos = CellPos(r, lastCol) + new Vector3(0.95f, 0.4f, 0);
         rowCounts.Add(ZhText.Make(bed, pos, Quaternion.Euler(Pitch, 0, 0), count.ToString(), new Color(0.15f, 0.35f, 0.9f), 0.9f, 0.7f));
+    }
+
+    // 一排一排跳一下、念出到這一排為止一共幾朵；again = 先說「再數數看」
+    IEnumerator CountRows(int t, bool again)
+    {
+        foreach (var tm in rowCounts) Destroy(tm.gameObject);
+        rowCounts.Clear();
+        if (again)
+        {
+            Say("GardenVoice/again");
+            yield return new WaitForSeconds(1.1f);
+        }
+        int total = 0;
+        for (int r = 0; r < Size; r++)
+        {
+            if (t != countToken) yield break;
+            int last = RowEnd(r, out int n);
+            if (n == 0) continue;
+            total += n;
+            bouncing.Clear();
+            for (int c = 0; c < Size; c++) if (flowers[r, c] != null) bouncing.Add(flowers[r, c]);
+            bounceStart = Time.time;
+            AddRowCount(r, last, total);
+            Say("GardenVoice/n_" + total);
+            yield return new WaitForSeconds(0.85f);
+        }
+        bouncing.Clear();
     }
 
     void Answer(int value)
@@ -272,7 +357,7 @@ public class GardenManager : MonoBehaviour
         else if (Planted > 0)
         {
             ShowMessage("再數數看！", 2.5f);
-            StartCoroutine(Recount(growToken));
+            StartCoroutine(CountRows(++countToken, true));
         }
         else
         {
@@ -281,41 +366,41 @@ public class GardenManager : MonoBehaviour
         }
     }
 
-    // 一排一排跳一下，再數一次
-    IEnumerator Recount(int t)
+    // 種的花剛好排成一個長方形：回傳幾排、每排幾朵
+    bool IsRectangle(out int rows, out int cols)
     {
-        foreach (var tm in rowCounts) Destroy(tm.gameObject);
-        rowCounts.Clear();
-        Say("GardenVoice/again");
-        yield return new WaitForSeconds(1.1f);
-        for (int i = 0; i < plantRows && t == growToken; i++)
-        {
-            bouncing.Clear();
-            for (int j = 0; j < plantCols; j++) bouncing.Add(flowers[plantR + i, plantC + j]);
-            bounceStart = Time.time;
-            AddRowCount(i, plantCols * (i + 1));
-            Say("GardenVoice/n_" + plantCols * (i + 1));
-            yield return new WaitForSeconds(0.85f);
-        }
-        bouncing.Clear();
+        int minR = Size, maxR = -1, minC = Size, maxC = -1, n = 0;
+        for (int r = 0; r < Size; r++)
+            for (int c = 0; c < Size; c++)
+                if (flowers[r, c] != null)
+                {
+                    n++;
+                    minR = Mathf.Min(minR, r); maxR = Mathf.Max(maxR, r);
+                    minC = Mathf.Min(minC, c); maxC = Mathf.Max(maxC, c);
+                }
+        rows = maxR - minR + 1;
+        cols = maxC - minC + 1;
+        return n > 0 && n == rows * cols;
     }
 
     IEnumerator Celebrate(int t)
     {
-        growToken++; // 還在長的花停下來
+        growToken++; // 還在長的花、正在數的都停下來
+        countToken++;
+        bouncing.Clear();
         sfx.PlayOneShot(ding, 0.6f);
         banner = q.Full;
         SayChain("GardenVoice/good" + Random.Range(1, 4), "GardenVoice/c_" + q.a + "_" + q.b);
         for (int i = 0; i < 6; i++) AddButterfly();
         yield return new WaitForSeconds(2.6f);
         // 種的剛好是 a 排 × b 朵 (或 b 排 × a 朵)：轉一轉，橫的變直的，一樣多
-        bool matches = Planted == q.Answer && plantRows != plantCols;
+        bool matches = IsRectangle(out int rows, out int cols) && rows * cols == q.Answer && rows != cols;
         if (t != token || !matches) yield break;
         labels.gameObject.SetActive(false);
         foreach (var tm in rowCounts) tm.gameObject.SetActive(false);
         spinTarget = 90f;
         yield return new WaitForSeconds(1.2f);
-        if (t == token) banner2 = plantRows + " 排 × " + plantCols + " 朵，轉過來變成 " + plantCols + " 排 × " + plantRows + " 朵，也是 " + q.Answer + " 朵！";
+        if (t == token) banner2 = rows + " 排 × " + cols + " 朵，轉過來變成 " + cols + " 排 × " + rows + " 朵，也是 " + q.Answer + " 朵！";
     }
 
     void AddButterfly()
@@ -439,7 +524,8 @@ public class GardenManager : MonoBehaviour
         if (dragging && prevHeld && !held)
         {
             dragging = false;
-            if (pickRows > 0) Plant(pickR, pickC, pickRows, pickCols);
+            if (pickRows == 1 && pickCols == 1) ToggleFlower(pickR, pickC);
+            else if (pickRows > 0) PlantArea(pickR, pickC, pickRows, pickCols);
             pickRows = pickCols = 0;
         }
         else if (!dragging && !held && !touchMode && PointedCell(false, out r, out c)) { hoverR = r; hoverC = c; }
@@ -514,10 +600,16 @@ public class GardenManager : MonoBehaviour
             var listenRect = Ui(W < 1300 ? new Rect(W - 250, 100, 230, 70) : new Rect(W / 2f + 330, 75, 200, 70));
             if (GUI.Button(listenRect, "<size=30>再聽一次</size>", ui.Button)) Say("GardenVoice/q_" + q.a + "_" + q.b);
 
-            string how = Planted > 0
-                ? "種了 " + plantRows + " 排，每排 " + plantCols + " 朵。數一數，選答案！想重種就再拖一次"
-                : touchMode ? "手指在花圃上拖一拖，種花來數數看！" : "滑鼠在花圃上按住拖一拖，種花來數數看！";
+            int planted = Planted;
+            string how = planted > 0
+                ? "數一數，選答案！點一下花可以拿掉"
+                : touchMode ? "點一格種一朵花，或手指按住拖一拖，一次種好幾排！" : "點一格種一朵花，或滑鼠按住拖一拖，一次種好幾排！";
             ui.Label(new Rect(20, 155, W - 40, 50), "<size=30>" + how + "</size>", ui.Small, new Color(1f, 1f, 0.75f));
+            if (planted > 0 && state == GardenState.Play)
+            {
+                var clearRect = Ui(new Rect(20, 65, 230, 70));
+                if (GUI.Button(clearRect, "<size=30>全部拿掉</size>", ui.Button)) { countToken++; ClearFlowers(); }
+            }
             if (pickRows > 0)
             {
                 var p = ui.ToGui(GameInput.PointerPosition);
