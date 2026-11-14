@@ -20,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Garden.unity
     guid: a6bfec79e377d944b958b656360c15d6
+  - enabled: 1
+    path: Assets/Scenes/Sniper.unity
+    guid: 16356ab56917cfd46a99016c191b0b51
   m_configObjects: {}

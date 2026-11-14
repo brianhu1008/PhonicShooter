@@ -16,7 +16,8 @@ public static class SceneSetup
     public const string MultiplyPath = "Assets/Scenes/Multiply.unity";
     public const string IslandPath = "Assets/Scenes/Island.unity"; // 卡皮巴拉發音島
     public const string GardenPath = "Assets/Scenes/Garden.unity"; // 九九乘法花園
-    public static readonly string[] AllScenes = { ParkPath, ScenePath, MultiplyPath, IslandPath, GardenPath };
+    public const string SniperPath = "Assets/Scenes/Sniper.unity"; // 狙擊樂園
+    public static readonly string[] AllScenes = { ParkPath, ScenePath, MultiplyPath, IslandPath, GardenPath, SniperPath };
 
     const string BaseMatPath = "Assets/Resources/BaseMat.mat";
     const string TextMatPath = "Assets/Resources/TextMat.mat";

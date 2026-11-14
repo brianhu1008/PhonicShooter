@@ -15,8 +15,9 @@ public class ParkManager : MonoBehaviour
     readonly List<Transform> horses = new List<Transform>();
     readonly List<Transform> balloons = new List<Transform>();
     readonly List<Transform> gardenFlowers = new List<Transform>();
-    Collider wheelHit, jetHit, islandHit, gardenHit;
-    TextMesh wheelSign, jetSign, islandSign, gardenSign;
+    readonly List<Transform> miniTroopers = new List<Transform>();
+    Collider wheelHit, jetHit, islandHit, gardenHit, sniperHit;
+    TextMesh wheelSign, jetSign, islandSign, gardenSign, sniperSign;
     string hovered;
     string leaving;
     float fade;
@@ -69,8 +70,56 @@ public class ParkManager : MonoBehaviour
         BuildFerrisWheel(root, new Vector3(-11f, 0, 6f));
         BuildJetRide(root, new Vector3(11f, 0, 6f));
         BuildCarousel(root, new Vector3(0, 0, 17f));
+        BuildSniperTower(root, new Vector3(17f, 0, 21f));
         BuildDecor(root);
         BuildIsland(root, new Vector3(0, 0, 92f));
+    }
+
+    // 狙擊樂園：木頭瞭望塔，旁邊有拿著 ㄅㄆㄇ 的小傘兵一直飄下來
+    void BuildSniperTower(Transform root, Vector3 p)
+    {
+        var tower = new GameObject("SniperTower").transform;
+        tower.SetParent(root, false);
+        tower.localPosition = p;
+        tower.localRotation = Quaternion.Euler(0, -25f, 0); // 面向鏡頭
+        var wood = new Color(0.58f, 0.42f, 0.27f);
+        for (int sx = -1; sx <= 1; sx += 2)
+            for (int sz = -1; sz <= 1; sz += 2)
+                Jets.Beam(tower, new Vector3(2.2f * sx, 0, 2.2f * sz), new Vector3(1.6f * sx, 9f, 1.6f * sz), 0.35f, wood * 0.85f);
+        Shapes.Part(PrimitiveType.Cube, tower, new Vector3(0, 9.2f, 0), new Vector3(4.4f, 0.4f, 4.4f), wood);
+        for (int s = 0; s < 4; s++)
+        {
+            var rail = Shapes.Part(PrimitiveType.Cube, tower, Quaternion.Euler(0, s * 90f, 0) * new Vector3(0, 10f, 2.1f), new Vector3(4.4f, 0.15f, 0.15f), wood);
+            rail.transform.localRotation = Quaternion.Euler(0, s * 90f, 0);
+        }
+        // 尖屋頂和迷彩旗
+        var roof = Shapes.Part(PrimitiveType.Cylinder, tower, new Vector3(0, 12.6f, 0), new Vector3(5.6f, 0.15f, 5.6f), new Color(0.35f, 0.45f, 0.25f));
+        Shapes.Part(PrimitiveType.Sphere, tower, new Vector3(0, 12.8f, 0), new Vector3(5.2f, 2f, 5.2f), new Color(0.35f, 0.45f, 0.25f));
+        for (int sx = -1; sx <= 1; sx += 2)
+            for (int sz = -1; sz <= 1; sz += 2)
+                Shapes.Part(PrimitiveType.Cube, tower, new Vector3(1.9f * sx, 11f, 1.9f * sz), new Vector3(0.2f, 3.2f, 0.2f), wood * 0.85f);
+        // 一直飄下來的小傘兵
+        string[] syms = { "ㄅ", "ㄆ", "ㄇ" };
+        Color[] cols = { new Color(1f, 0.45f, 0.45f), new Color(1f, 0.68f, 0.25f), new Color(0.45f, 0.85f, 0.45f) };
+        for (int i = 0; i < 3; i++)
+        {
+            var para = new GameObject("MiniParatrooper").transform;
+            para.SetParent(tower, false);
+            Shapes.Part(PrimitiveType.Sphere, para, new Vector3(0, 2.4f, 0), new Vector3(2.4f, 1f, 2.4f), cols[i]);
+            for (int k = 0; k < 4; k++)
+            {
+                float a = k * Mathf.PI / 2f + Mathf.PI / 4f;
+                Jets.Beam(para, new Vector3(Mathf.Cos(a) * 1.1f, 2.2f, Mathf.Sin(a) * 1.1f), new Vector3(0, 0.9f, 0), 0.04f, Color.white);
+            }
+            Shapes.Part(PrimitiveType.Cube, para, new Vector3(0, 0.55f, 0), new Vector3(0.45f, 0.6f, 0.3f), new Color(0.36f, 0.45f, 0.25f));
+            Shapes.Part(PrimitiveType.Sphere, para, new Vector3(0, 1.05f, 0), Vector3.one * 0.38f, new Color(1f, 0.82f, 0.66f));
+            ZhText.Make(para, new Vector3(0, 2.3f, -1.25f), Quaternion.identity, syms[i], Color.white, 1.2f, 1.2f);
+            miniTroopers.Add(para);
+        }
+
+        // 牌子掛在塔上 (放在地上會被前面的戰機設施擋住)
+        sniperSign = Sign(tower, new Vector3(0, 11.6f, -2.5f), "狙擊樂園", "打下 ㄅㄆㄇ 傘兵", new Color(0.3f, 0.42f, 0.25f));
+        sniperHit = AddHitBox(tower, new Vector3(0, 8f, 0), new Vector3(8f, 17f, 8f));
     }
 
     // 九九乘法花園：圓形花圃，花一排一排種好 (4 排、每排 6 朵)，外面圍一圈白色小籬笆
@@ -299,7 +348,8 @@ public class ParkManager : MonoBehaviour
         }
 
         jetSign = Sign(baseT, new Vector3(0, 2.2f, -6.8f), "九九乘法戰機", "9 × 9", new Color(0.35f, 0.55f, 0.95f));
-        jetHit = AddHitBox(baseT, new Vector3(0, 5f, 0), new Vector3(15f, 11f, 15f));
+        // 只到飛機的高度，不要擋住後面的狙擊樂園瞭望塔
+        jetHit = AddHitBox(baseT, new Vector3(0, 4.3f, 0), new Vector3(15f, 8.6f, 15f));
     }
 
     void BuildCarousel(Transform root, Vector3 p)
@@ -409,6 +459,14 @@ public class ParkManager : MonoBehaviour
         islandCapy.localRotation = Quaternion.Euler(0, 180f + Mathf.Sin(t * 0.6f) * 12f, 0);
         for (int i = 0; i < gardenFlowers.Count; i++)
             gardenFlowers[i].localRotation = Quaternion.Euler(Mathf.Sin(t * 1.6f + i * 0.7f) * 6f, 0, Mathf.Cos(t * 1.3f + i) * 6f);
+        // 小傘兵從塔旁邊的高處慢慢飄到地上，再從頭開始
+        for (int i = 0; i < miniTroopers.Count; i++)
+        {
+            float k = Mathf.Repeat(t * 0.06f + i / 3f, 1f);
+            float a = i * 2.1f + 0.6f;
+            miniTroopers[i].localPosition = new Vector3(Mathf.Cos(a) * 5.5f + Mathf.Sin(t + i) * 0.4f, Mathf.Lerp(24f, 0f, k), Mathf.Sin(a) * 5.5f);
+            miniTroopers[i].localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * 1.4f + i) * 8f);
+        }
 
         // 滑鼠移到畫面上方 → 鏡頭帶到後面的小島；移到下方 → 回到樂園 (iPad 點上方 / 下方也可以)
         float py = GameInput.PointerPosition.y / Mathf.Max(1, Screen.height);
@@ -428,6 +486,7 @@ public class ParkManager : MonoBehaviour
                 else if (hit.collider == jetHit) hovered = AppBoot.MultiplyScene;
                 else if (hit.collider == islandHit) hovered = AppBoot.IslandScene;
                 else if (hit.collider == gardenHit) hovered = AppBoot.GardenScene;
+                else if (hit.collider == sniperHit) hovered = AppBoot.SniperScene;
             }
             if (hovered == AppBoot.IslandScene) focusTarget = 1f; // 指著小島就停在小島
             if (hovered != null && GameInput.Fire && !PointerOverUi()) Go(hovered);
@@ -437,6 +496,7 @@ public class ParkManager : MonoBehaviour
         jetSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.MultiplyScene ? pulse : 1f);
         islandSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.IslandScene ? pulse * 1.3f : 1.3f);
         gardenSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.GardenScene ? pulse : 1f);
+        sniperSign.transform.parent.localScale = Vector3.one * (hovered == AppBoot.SniperScene ? pulse : 1f);
 
         if (leaving != null)
         {
@@ -489,7 +549,7 @@ public class ParkManager : MonoBehaviour
         {
             var p = ui.ToGui(GameInput.PointerPosition);
             string tip = hovered == AppBoot.ZhuyinScene ? "坐摩天輪！" : hovered == AppBoot.MultiplyScene ? "開戰機！" :
-                hovered == AppBoot.GardenScene ? "去種花！" : "去卡皮巴拉發音島！";
+                hovered == AppBoot.GardenScene ? "去種花！" : hovered == AppBoot.SniperScene ? "當狙擊手！" : "去卡皮巴拉發音島！";
             float tw = hovered == AppBoot.IslandScene ? 380 : 260;
             ui.Box(new Rect(p.x + 20, p.y - 70, tw, 60), new Color(0, 0, 0, 0.6f));
             ui.Label(new Rect(p.x + 20, p.y - 70, tw, 60), tip, ui.Small, Color.yellow);

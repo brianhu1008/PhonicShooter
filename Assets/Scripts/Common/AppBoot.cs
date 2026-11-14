@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 //   Multiply 九九乘法戰機
 //   Island   卡皮巴拉發音島 (從 PhonicIsland 專案合併進來，Assets/PhonicsIsland)
 //   Garden   九九乘法花園 (種花學乘法)
+//   Sniper   狙擊樂園 (狙擊鏡打注音傘兵)
 // 場景本身都是空的，整個遊戲都由程式建立。
 public static class AppBoot
 {
@@ -15,6 +16,7 @@ public static class AppBoot
     public const string MultiplyScene = "Multiply";
     public const string IslandScene = "Island";
     public const string GardenScene = "Garden";
+    public const string SniperScene = "Sniper";
 
     static bool startupChecked;
 
@@ -48,6 +50,7 @@ public static class AppBoot
             case MultiplyScene: new GameObject("SkyShooter").AddComponent<SkyManager>(); break;
             case IslandScene: new GameObject("PhonicsIslandGame").AddComponent<PhonicsIsland.PhonicsIslandGame>(); break;
             case GardenScene: new GameObject("Garden").AddComponent<GardenManager>(); break;
+            case SniperScene: new GameObject("Sniper").AddComponent<SniperManager>(); break;
             default: new GameObject("PhonicShooter").AddComponent<GameManager>(); break;
         }
     }
